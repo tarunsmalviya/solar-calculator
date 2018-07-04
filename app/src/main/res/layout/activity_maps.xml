@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:map="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
+    android:fitsSystemWindows="true">
 
     <fragment
         android:id="@+id/map"
@@ -13,10 +15,15 @@
         tools:context=".activity.MapsActivity" />
 
     <ImageView
-        android:layout_width="60dp"
+        android:id="@+id/marker"
+        android:layout_width="@dimen/marker_width"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:adjustViewBounds="true"
         android:scaleType="centerInside"
         android:src="@drawable/ic_marker" />
+
+    <include layout="@layout/map_action_bar" />
+
+    <include layout="@layout/map_info_card" />
 </FrameLayout>

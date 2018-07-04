@@ -1,14 +1,22 @@
 package com.tarunsmalviya.solarcalculator.activity;
 
 import android.Manifest;
+import android.app.DatePickerDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.View;
+import android.widget.DatePicker;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -18,11 +26,16 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.tarunsmalviya.solarcalculator.R;
-import com.tarunsmalviya.solarcalculator.util.CommonMethods;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener {
 
     private final int LOCATION_PERMISSIONS_REQUEST = 1001;
 
@@ -31,7 +44,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+        init();
         initMap();
+        initView();
+        setUpListener();
+
+        dateTxt.setText(
+                String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)) + " " +
+                        calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US) + ", " +
+                        String.valueOf(calendar.get(Calendar.YEAR)));
+    }
+
+    private static LatLng point;
+    private static Calendar calendar;
+
+    private void init() {
+        point = new LatLng(28.6139, 77.2090);
+        calendar = Calendar.getInstance();
     }
 
     private GoogleMap mMap;
@@ -42,71 +71,141 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
+    private EditText searchEdt;
+    private View actionBar, infoCard, locateBtn, viewPinnedBtn, dateLyt, pinBtn;
+    private static TextView dateTxt;
+    private TextView sunriseTxt, sunsetTxt;
 
-        if (!checkPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-            ActivityCompat.requestPermissions(MapsActivity.this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSIONS_REQUEST);
-        } else showCurrentLocationOnMap();
+    private void initView() {
+        searchEdt = findViewById(R.id.search_edt);
+        actionBar = findViewById(R.id.action_bar);
+        infoCard = findViewById(R.id.info_card);
+        locateBtn = findViewById(R.id.locate_btn);
+        viewPinnedBtn = findViewById(R.id.view_pinned_btn);
+        dateLyt = findViewById(R.id.date_lyt);
+        pinBtn = findViewById(R.id.pin_btn);
+        dateTxt = findViewById(R.id.date_txt);
+        sunriseTxt = findViewById(R.id.sunrise_txt);
+        sunriseTxt = findViewById(R.id.sunset_txt);
+    }
+
+    private void setUpListener() {
+        locateBtn.setOnClickListener(this);
+        viewPinnedBtn.setOnClickListener(this);
+        dateLyt.setOnClickListener(this);
+        pinBtn.setOnClickListener(this);
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case LOCATION_PERMISSIONS_REQUEST: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    showCurrentLocationOnMap();
-                }
-                return;
-            }
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.locate_btn:
+                showCurrentLocationOnMap();
+                break;
+            case R.id.view_pinned_btn:
+                break;
+            case R.id.date_lyt:
+                DialogFragment newFragment = new DatePickerFragment();
+                newFragment.show(getSupportFragmentManager(), "datePicker");
+                break;
+            case R.id.pin_btn:
+                break;
         }
-    }
-
-    @SuppressWarnings("MissingPermission")
-    private void showCurrentLocationOnMap() {
-        FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        mFusedLocationClient.getLastLocation()
-                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                    @Override
-                    public void onSuccess(Location location) {
-                        if (location != null && mMap != null) {
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 3));
-                        }
-                    }
-                });
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         setUpMap();
-
-        mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
-            @Override
-            public void onCameraIdle() {
-                Log.e("LAT", mMap.getCameraPosition().target.latitude + "");
-                Log.e("LONG", mMap.getCameraPosition().target.longitude + "");
-
-                mMap.addMarker(new MarkerOptions().position(mMap.getCameraPosition().target).title("It's Me!"));
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mMap.getCameraPosition().target.latitude, mMap.getCameraPosition().target.longitude), 3));
-            }
-        });
     }
 
     private void setUpMap() {
         if (mMap != null) {
-            mMap.getUiSettings().setZoomControlsEnabled(true);
-            mMap.getUiSettings().setMyLocationButtonEnabled(true);
             mMap.getUiSettings().setCompassEnabled(true);
             mMap.getUiSettings().setRotateGesturesEnabled(true);
             mMap.getUiSettings().setZoomGesturesEnabled(true);
+            mMap.setOnCameraMoveStartedListener(new GoogleMap.OnCameraMoveStartedListener() {
+                @Override
+                public void onCameraMoveStarted(int i) {
+                    actionBar.setVisibility(View.GONE);
+                    infoCard.setVisibility(View.GONE);
+                }
+            });
+            mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
+                @Override
+                public void onCameraIdle() {
+                    Log.d("LATITUDE", mMap.getCameraPosition().target.latitude + "");
+                    Log.d("LONGITUDE", mMap.getCameraPosition().target.longitude + "");
+
+                    point = new LatLng(mMap.getCameraPosition().target.latitude, mMap.getCameraPosition().target.longitude);
+
+                    actionBar.setVisibility(View.VISIBLE);
+                    infoCard.setVisibility(View.VISIBLE);
+                }
+            });
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(point, 15f));
+
+            showCurrentLocationOnMap();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case LOCATION_PERMISSIONS_REQUEST: {
+                showCurrentLocationOnMap();
+                return;
+            }
+        }
+    }
+
+    private void showCurrentLocationOnMap() {
+        if (!checkPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+            ActivityCompat.requestPermissions(MapsActivity.this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSIONS_REQUEST);
+        } else {
+            FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+            mFusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                        @Override
+                        public void onSuccess(Location location) {
+                            if (mMap != null)
+                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 15f));
+                        }
+                    });
         }
     }
 
     private Boolean checkPermission(Context context, String which) {
         return ContextCompat.checkSelfPermission(context, which) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static class DatePickerFragment extends DialogFragment
+            implements DatePickerDialog.OnDateSetListener {
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            if (calendar == null)
+                return null;
+
+            // Use the current date as the default date in the picker
+            int year = calendar.get(Calendar.YEAR);
+            int month = calendar.get(Calendar.MONTH);
+            int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+            return new DatePickerDialog(getActivity(), this, year, month, day);
+        }
+
+        public void onDateSet(DatePicker view, int year, int month, int day) {
+            if (calendar == null)
+                return;
+
+            calendar.set(Calendar.DAY_OF_MONTH, day);
+            calendar.set(Calendar.MONTH, month);
+            calendar.set(Calendar.YEAR, year);
+
+            dateTxt.setText(String.valueOf(day) + " " + calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US) + ", " + String.valueOf(year));
+        }
     }
 }
