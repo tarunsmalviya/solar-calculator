@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Solar Calculator</string>
     <string name="prompt_search">Search</string>
-    <string name="title_activity_maps">Map</string>
+    <string name="title_pinned_location">Pinned Locations</string>
 </resources>

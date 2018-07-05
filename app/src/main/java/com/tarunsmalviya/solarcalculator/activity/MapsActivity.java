@@ -8,17 +8,17 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
-import android.util.TimeUtils;
 import android.view.View;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -27,18 +27,22 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.tarunsmalviya.solarcalculator.R;
+import com.tarunsmalviya.solarcalculator.adapter.PinnedLocationAdapter;
+import com.tarunsmalviya.solarcalculator.model.PinnedLocation;
+import com.tarunsmalviya.solarcalculator.util.OnPinnedLocationSelected;
+import com.tarunsmalviya.solarcalculator.util.SunAlgorithm;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener {
+import io.realm.Realm;
+import io.realm.RealmResults;
+import io.realm.Sort;
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener, OnPinnedLocationSelected {
 
     private final int LOCATION_PERMISSIONS_REQUEST = 1001;
 
@@ -61,6 +65,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static LatLng point;
     private static Calendar calendar;
     private static CalculationTask calculationTask;
+    private AlertDialog pinnedLocationDialog;
+    private RealmResults<PinnedLocation> locations;
 
     private void init() {
         point = new LatLng(28.6139, 77.2090);
@@ -108,13 +114,66 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 showCurrentLocationOnMap();
                 break;
             case R.id.view_pinned_btn:
+                actionViewPinnedLocation();
                 break;
             case R.id.date_lyt:
                 DialogFragment newFragment = new DatePickerFragment();
                 newFragment.show(getSupportFragmentManager(), "datePicker");
                 break;
             case R.id.pin_btn:
+                actionPinLocation();
                 break;
+        }
+    }
+
+    private void actionViewPinnedLocation() {
+        locations = Realm.getDefaultInstance().where(PinnedLocation.class).findAllAsync().sort("id", Sort.DESCENDING);
+        if (pinnedLocationDialog == null)
+            pinnedLocationDialog = new AlertDialog.Builder(MapsActivity.this)
+                    .setIcon(R.drawable.ic_pin)
+                    .setTitle(R.string.title_pinned_location)
+                    .setNegativeButton("Close", null)
+                    .setAdapter(new PinnedLocationAdapter(MapsActivity.this, 0, locations), null)
+                    .create();
+        pinnedLocationDialog.show();
+    }
+
+    private void actionPinLocation() {
+        Realm.getDefaultInstance().executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                long count = realm.where(PinnedLocation.class).max("id").longValue();
+
+                PinnedLocation location = realm.createObject(PinnedLocation.class, count + 1);
+                location.setDay(calendar.get(Calendar.DAY_OF_MONTH));
+                location.setMonth(calendar.get(Calendar.MONTH));
+                location.setYear(calendar.get(Calendar.YEAR));
+                location.setLatitude(point.latitude);
+                location.setLongitude(point.longitude);
+
+                Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onPinnedLocationSelected(final int position, Boolean delete) {
+        if (delete) Realm.getDefaultInstance().executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                locations.get(position).deleteFromRealm();
+            }
+        });
+        else {
+            if (pinnedLocationDialog != null)
+                pinnedLocationDialog.dismiss();
+
+            calendar.set(Calendar.DAY_OF_MONTH, locations.get(position).getDay());
+            calendar.set(Calendar.MONTH, locations.get(position).getMonth());
+            calendar.set(Calendar.YEAR, locations.get(position).getYear());
+
+            if (mMap != null)
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(locations.get(position).getLatitude(), locations.get(position).getLongitude()), 15f));
         }
     }
 
@@ -196,6 +255,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         calculationTask = new CalculationTask();
         calculationTask.execute("");
+    }
+
+    private static class ShowPinnedLocationTask extends AsyncTask<String, Integer, double[]> {
+
+        protected double[] doInBackground(String... urls) {
+            return SunAlgorithm.calculateTimes(calendar.getTimeInMillis(), point.latitude, point.longitude);
+        }
+
+        @Override
+        protected void onPostExecute(double[] times) {
+            super.onPostExecute(times);
+
+            SimpleDateFormat date = new SimpleDateFormat("dd MMM, yyyy");
+            SimpleDateFormat time = new SimpleDateFormat("hh:mm a");
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(Math.round(times[0]));
+
+            dateTxt.setText(date.format(calendar.getTime()));
+            Log.d("Date", date.format(calendar.getTime()));
+
+            sunriseTxt.setText(time.format(calendar.getTime()));
+            Log.d("Sunrise Time", time.format(calendar.getTime()));
+
+            calendar.setTimeInMillis(Math.round(times[1]));
+            sunsetTxt.setText(time.format(calendar.getTime()));
+            Log.d("Sunset Time", time.format(calendar.getTime()));
+        }
     }
 
     private static class CalculationTask extends AsyncTask<String, Integer, double[]> {

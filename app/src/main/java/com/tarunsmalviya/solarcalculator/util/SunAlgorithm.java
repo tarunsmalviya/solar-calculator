@@ -1,4 +1,6 @@
-package com.tarunsmalviya.solarcalculator.activity;
+package com.tarunsmalviya.solarcalculator.util;
+
+import java.util.Date;
 
 public class SunAlgorithm {
 
