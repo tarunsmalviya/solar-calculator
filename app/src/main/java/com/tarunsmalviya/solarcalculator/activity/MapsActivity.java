@@ -6,6 +6,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -13,6 +14,7 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.util.TimeUtils;
 import android.view.View;
 import android.widget.DatePicker;
 import android.widget.EditText;
@@ -34,6 +36,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener {
 
@@ -45,8 +48,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_maps);
 
         init();
-        initMap();
         initView();
+        initMap();
         setUpListener();
 
         dateTxt.setText(
@@ -57,10 +60,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static LatLng point;
     private static Calendar calendar;
+    private static CalculationTask calculationTask;
 
     private void init() {
         point = new LatLng(28.6139, 77.2090);
         calendar = Calendar.getInstance();
+        calculationTask = new CalculationTask();
     }
 
     private GoogleMap mMap;
@@ -74,7 +79,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private EditText searchEdt;
     private View actionBar, infoCard, locateBtn, viewPinnedBtn, dateLyt, pinBtn;
     private static TextView dateTxt;
-    private TextView sunriseTxt, sunsetTxt;
+    private static TextView sunriseTxt, sunsetTxt;
 
     private void initView() {
         searchEdt = findViewById(R.id.search_edt);
@@ -86,7 +91,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         pinBtn = findViewById(R.id.pin_btn);
         dateTxt = findViewById(R.id.date_txt);
         sunriseTxt = findViewById(R.id.sunrise_txt);
-        sunriseTxt = findViewById(R.id.sunset_txt);
+        sunsetTxt = findViewById(R.id.sunset_txt);
     }
 
     private void setUpListener() {
@@ -139,6 +144,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     point = new LatLng(mMap.getCameraPosition().target.latitude, mMap.getCameraPosition().target.longitude);
 
+                    updateTimes();
+
                     actionBar.setVisibility(View.VISIBLE);
                     infoCard.setVisibility(View.VISIBLE);
                 }
@@ -150,7 +157,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String permissions[],
+                                           int[] grantResults) {
         switch (requestCode) {
             case LOCATION_PERMISSIONS_REQUEST: {
                 showCurrentLocationOnMap();
@@ -181,6 +189,43 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return ContextCompat.checkSelfPermission(context, which) == PackageManager.PERMISSION_GRANTED;
     }
 
+    private static void updateTimes() {
+        if (calculationTask != null) {
+            calculationTask.cancel(true);
+            calculationTask = null;
+        }
+        calculationTask = new CalculationTask();
+        calculationTask.execute("");
+    }
+
+    private static class CalculationTask extends AsyncTask<String, Integer, double[]> {
+
+        protected double[] doInBackground(String... urls) {
+            return SunAlgorithm.calculateTimes(calendar.getTimeInMillis(), point.latitude, point.longitude);
+        }
+
+        @Override
+        protected void onPostExecute(double[] times) {
+            super.onPostExecute(times);
+
+            SimpleDateFormat date = new SimpleDateFormat("dd MMM, yyyy");
+            SimpleDateFormat time = new SimpleDateFormat("hh:mm a");
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(Math.round(times[0]));
+
+            dateTxt.setText(date.format(calendar.getTime()));
+            Log.d("Date", date.format(calendar.getTime()));
+
+            sunriseTxt.setText(time.format(calendar.getTime()));
+            Log.d("Sunrise Time", time.format(calendar.getTime()));
+
+            calendar.setTimeInMillis(Math.round(times[1]));
+            sunsetTxt.setText(time.format(calendar.getTime()));
+            Log.d("Sunset Time", time.format(calendar.getTime()));
+        }
+    }
+
     public static class DatePickerFragment extends DialogFragment
             implements DatePickerDialog.OnDateSetListener {
 
@@ -206,6 +251,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             calendar.set(Calendar.YEAR, year);
 
             dateTxt.setText(String.valueOf(day) + " " + calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US) + ", " + String.valueOf(year));
+
+            updateTimes();
         }
     }
 }
