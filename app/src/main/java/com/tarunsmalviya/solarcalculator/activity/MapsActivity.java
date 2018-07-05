@@ -128,13 +128,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void actionViewPinnedLocation() {
         locations = Realm.getDefaultInstance().where(PinnedLocation.class).findAllAsync().sort("id", Sort.DESCENDING);
-        if (pinnedLocationDialog == null)
-            pinnedLocationDialog = new AlertDialog.Builder(MapsActivity.this)
-                    .setIcon(R.drawable.ic_pin)
-                    .setTitle(R.string.title_pinned_location)
-                    .setNegativeButton("Close", null)
-                    .setAdapter(new PinnedLocationAdapter(MapsActivity.this, 0, locations), null)
-                    .create();
+        pinnedLocationDialog = new AlertDialog.Builder(MapsActivity.this)
+                .setIcon(R.drawable.ic_pin)
+                .setTitle(R.string.title_pinned_location)
+                .setNegativeButton("Close", null)
+                .setAdapter(new PinnedLocationAdapter(MapsActivity.this, 0, locations), null)
+                .create();
         pinnedLocationDialog.show();
     }
 

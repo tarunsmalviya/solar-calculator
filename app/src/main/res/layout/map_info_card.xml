@@ -45,32 +45,28 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="@dimen/spacing_8"
-                    android:layout_marginRight="@dimen/spacing_8"
                     android:ems="5"
                     android:gravity="center"
                     android:text="24 July, 2018"
                     android:textColor="@color/colorPrimaryText"
                     android:textSize="@dimen/text_subheading" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="?selectableItemBackground"
-                android:gravity="right"
-                android:orientation="horizontal">
-
-                <ImageButton
-                    android:id="@+id/pin_btn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="@dimen/icon_size"
-                    android:adjustViewBounds="true"
-                    android:background="?selectableItemBackground"
-                    android:padding="@dimen/spacing_4"
-                    android:scaleType="centerInside"
-                    android:src="@drawable/ic_pin" />
-            </LinearLayout>
+            <ImageButton
+                android:id="@+id/pin_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/icon_size"
+                android:layout_marginLeft="@dimen/spacing_8"
+                android:adjustViewBounds="true"
+                android:background="?selectableItemBackgroundBorderless"
+                android:padding="@dimen/spacing_4"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_pin" />
         </LinearLayout>
 
         <View
@@ -86,11 +82,6 @@
             android:orientation="horizontal"
             android:padding="@dimen/spacing_8">
 
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
             <ImageView
                 android:layout_width="@dimen/icon_size"
                 android:layout_height="@dimen/icon_size"
@@ -100,19 +91,14 @@
 
             <TextView
                 android:id="@+id/sunrise_txt"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="@dimen/spacing_8"
-                android:ems="5"
+                android:layout_marginRight="@dimen/spacing_8"
+                android:layout_weight="1"
                 android:gravity="center"
                 android:text="6:00 AM"
                 android:textColor="@color/colorPrimaryText"
                 android:textSize="@dimen/text_subheading" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
 
             <View
                 android:layout_width="1dp"
@@ -120,33 +106,24 @@
                 android:alpha="0.6"
                 android:background="@color/colorDivider" />
 
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
             <ImageView
                 android:layout_width="@dimen/icon_size"
                 android:layout_height="@dimen/icon_size"
+                android:layout_marginLeft="@dimen/spacing_8"
                 android:adjustViewBounds="true"
                 android:scaleType="centerInside"
                 android:src="@drawable/ic_sunset" />
 
             <TextView
                 android:id="@+id/sunset_txt"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="@dimen/spacing_8"
-                android:ems="5"
+                android:layout_marginRight="@dimen/spacing_8"
+                android:layout_weight="1"
                 android:gravity="center"
                 android:text="6:00 PM"
                 android:textColor="@color/colorPrimaryText"
                 android:textSize="@dimen/text_subheading" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
         </LinearLayout>
     </LinearLayout>
 </android.support.v7.widget.CardView>
