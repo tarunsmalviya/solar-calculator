@@ -142,7 +142,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Realm.getDefaultInstance().executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
-                long count = realm.where(PinnedLocation.class).max("id").longValue();
+                Number number = realm.where(PinnedLocation.class).max("id");
+                long count = 0;
+                if (number != null)
+                    count = number.longValue();
 
                 PinnedLocation location = realm.createObject(PinnedLocation.class, count + 1);
                 location.setDay(calendar.get(Calendar.DAY_OF_MONTH));
