@@ -26,4 +26,5 @@
     <include layout="@layout/map_action_bar" />
 
     <include layout="@layout/map_info_card" />
+
 </FrameLayout>

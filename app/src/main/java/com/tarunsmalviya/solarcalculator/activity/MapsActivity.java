@@ -20,8 +20,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
+import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -54,10 +58,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         init();
         initView();
         initMap();
+        initPlaceAutoComplete();
         setUpListener();
 
         dateTxt.setText(
                 String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)) + " " +
+
                         calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US) + ", " +
                         String.valueOf(calendar.get(Calendar.YEAR)));
     }
@@ -67,6 +73,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static CalculationTask calculationTask;
     private AlertDialog pinnedLocationDialog;
     private RealmResults<PinnedLocation> locations;
+    private PinnedLocationAdapter pinnedLocationAdapter;
 
     private void init() {
         point = new LatLng(28.6139, 77.2090);
@@ -82,13 +89,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
     }
 
-    private EditText searchEdt;
+    private void initPlaceAutoComplete() {
+        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
+                getFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                if (mMap != null && place.getLatLng() != null)
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(), 15f));
+            }
+
+            @Override
+            public void onError(Status status) {
+            }
+        });
+    }
+
+    // private EditText searchEdt;
     private View actionBar, infoCard, locateBtn, viewPinnedBtn, dateLyt, pinBtn;
     private static TextView dateTxt;
     private static TextView sunriseTxt, sunsetTxt;
 
     private void initView() {
-        searchEdt = findViewById(R.id.search_edt);
+        // searchEdt = findViewById(R.id.search_edt);
         actionBar = findViewById(R.id.action_bar);
         infoCard = findViewById(R.id.info_card);
         locateBtn = findViewById(R.id.locate_btn);
@@ -127,13 +150,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void actionViewPinnedLocation() {
-        locations = Realm.getDefaultInstance().where(PinnedLocation.class).findAllAsync().sort("id", Sort.DESCENDING);
-        pinnedLocationDialog = new AlertDialog.Builder(MapsActivity.this)
-                .setIcon(R.drawable.ic_pin)
-                .setTitle(R.string.title_pinned_location)
-                .setNegativeButton("Close", null)
-                .setAdapter(new PinnedLocationAdapter(MapsActivity.this, 0, locations), null)
-                .create();
+        if (locations == null || pinnedLocationAdapter == null || pinnedLocationDialog == null) {
+            locations = Realm.getDefaultInstance().where(PinnedLocation.class).findAllAsync().sort("id", Sort.DESCENDING);
+            pinnedLocationAdapter = new PinnedLocationAdapter(MapsActivity.this, 0, locations);
+            pinnedLocationDialog = new AlertDialog.Builder(MapsActivity.this)
+                    .setIcon(R.drawable.ic_pin)
+                    .setTitle(R.string.title_pinned_location)
+                    .setNegativeButton("Close", null)
+                    .setAdapter(pinnedLocationAdapter, null)
+                    .create();
+        } else pinnedLocationAdapter.notifyDataSetChanged();
         pinnedLocationDialog.show();
     }
 
