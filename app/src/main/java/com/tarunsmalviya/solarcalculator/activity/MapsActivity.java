@@ -3,20 +3,16 @@ package com.tarunsmalviya.solarcalculator.activity;
 import android.Manifest;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
-import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.widget.DatePicker;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,6 +31,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.tarunsmalviya.solarcalculator.R;
 import com.tarunsmalviya.solarcalculator.adapter.PinnedLocationAdapter;
 import com.tarunsmalviya.solarcalculator.model.PinnedLocation;
+import com.tarunsmalviya.solarcalculator.util.CommonMethod;
 import com.tarunsmalviya.solarcalculator.util.OnPinnedLocationSelected;
 import com.tarunsmalviya.solarcalculator.util.SunAlgorithm;
 
@@ -255,7 +252,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void showCurrentLocationOnMap() {
-        if (!checkPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+        if (!CommonMethod.checkPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)) {
             ActivityCompat.requestPermissions(MapsActivity.this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     LOCATION_PERMISSIONS_REQUEST);
@@ -272,10 +269,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private Boolean checkPermission(Context context, String which) {
-        return ContextCompat.checkSelfPermission(context, which) == PackageManager.PERMISSION_GRANTED;
-    }
-
     private static void updateTimes() {
         if (calculationTask != null) {
             calculationTask.cancel(true);
@@ -283,34 +276,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         calculationTask = new CalculationTask();
         calculationTask.execute("");
-    }
-
-    private static class ShowPinnedLocationTask extends AsyncTask<String, Integer, double[]> {
-
-        protected double[] doInBackground(String... urls) {
-            return SunAlgorithm.calculateTimes(calendar.getTimeInMillis(), point.latitude, point.longitude);
-        }
-
-        @Override
-        protected void onPostExecute(double[] times) {
-            super.onPostExecute(times);
-
-            SimpleDateFormat date = new SimpleDateFormat("dd MMM, yyyy");
-            SimpleDateFormat time = new SimpleDateFormat("hh:mm a");
-
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(Math.round(times[0]));
-
-            dateTxt.setText(date.format(calendar.getTime()));
-            Log.d("Date", date.format(calendar.getTime()));
-
-            sunriseTxt.setText(time.format(calendar.getTime()));
-            Log.d("Sunrise Time", time.format(calendar.getTime()));
-
-            calendar.setTimeInMillis(Math.round(times[1]));
-            sunsetTxt.setText(time.format(calendar.getTime()));
-            Log.d("Sunset Time", time.format(calendar.getTime()));
-        }
     }
 
     private static class CalculationTask extends AsyncTask<String, Integer, double[]> {
